@@ -8,14 +8,6 @@ struct QRCodeOverlayView: View {
         // 每个二维码单独处理，不使用ZStack叠放，避免点击事件穿透问题
         GeometryReader { geometry in
             ZStack {
-                // 记录点击坐标用于调试，修改为低层级
-                Color.clear
-                    .contentShape(Rectangle())
-                    .onTapGesture { location in
-                        print("背景点击位置: \(location)")
-                    }
-                    .zIndex(1) // 确保背景在底层
-                
                 // 绘制所有二维码的边框和选择按钮
                 ForEach(codes) { code in
                     QRCodeItem(code: code, onSelect: onSelect)
@@ -23,7 +15,7 @@ struct QRCodeOverlayView: View {
                 }
             }
             .frame(width: geometry.size.width, height: geometry.size.height)
-            .allowsHitTesting(false) // 确保整个覆盖层可以接收点击
+            .allowsHitTesting(true) // 确保整个覆盖层可以接收点击
             .onAppear {
                 print("二维码覆盖层出现 - 二维码数量: \(codes.count)")
                 for (index, code) in codes.enumerated() {
@@ -56,62 +48,56 @@ struct QRCodeItem: View {
     }
     
     var body: some View {
-        // 添加直接的点击手势进行测试
-        ZStack {
-//            // 半透明背景
-//            RoundedRectangle(cornerRadius: 12)
-//                .fill(Color.green.opacity(isPressed ? 0.3 : 0.2))
-//                .frame(width: frameWidth, height: frameHeight)
-//            
-//            // 边框
-//            RoundedRectangle(cornerRadius: 12)
-//                .stroke(Color.green, lineWidth: isPressed ? 4 : 3)
-//                .frame(width: frameWidth, height: frameHeight)
-//            
-//            // 类型图标
-//            VStack {
-//                HStack {
-//                    Spacer()
-//                    VStack(spacing: 2) {
-//                        ZStack {
-//                            Circle()
-//                                .fill(Color.green)
-//                                .frame(width: 26, height: 26)
-//                            
-//                            Image(systemName: code.type.icon)
-//                                .foregroundColor(.white)
-//                                .font(.system(size: 16))
-//                        }
-//                        
-//                        // 添加"open"文字标签
-//                        Text("open")
-//                            .font(.system(size: 12, weight: .semibold))
-//                            .foregroundColor(.white)
-//                            .padding(.horizontal, 8)
-//                            .padding(.vertical, 2)
-//                            .background(
-//                                RoundedRectangle(cornerRadius: 8)
-//                                    .fill(Color.green)
-//                            )
-//                    }
-//                    .padding(8)
-//                }
-//                Spacer()
-            
-//            }
-//            .frame(width: frameWidth, height: frameHeight)
-            Color.white
-                .contentShape(Rectangle())
-                .frame(width: frameWidth, height: frameHeight)
-//                .onTapGesture { location in
-//                    print("背景点击位置: \(location)")
-//                }
-//                .zIndex(1) // 确保背景在底层
-        }
-        .onTapGesture {
-            print("直接点击二维码: \(code.content)")
+        // 使用Button替代ZStack+onTapGesture
+        Button(action: {
+            print("Button直接点击二维码: \(code.content)")
             handleTap()
+        }) {
+            ZStack {
+                // 半透明背景
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.green.opacity(isPressed ? 0.3 : 0.2))
+                    .frame(width: frameWidth, height: frameHeight)
+                
+                // 边框
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(Color.green, lineWidth: isPressed ? 4 : 3)
+                    .frame(width: frameWidth, height: frameHeight)
+                
+                // 类型图标
+                VStack {
+                    HStack {
+                        Spacer()
+                        VStack(spacing: 2) {
+                            ZStack {
+                                Circle()
+                                    .fill(Color.green)
+                                    .frame(width: 26, height: 26)
+                                
+                                Image(systemName: code.type.icon)
+                                    .foregroundColor(.white)
+                                    .font(.system(size: 16))
+                            }
+                            
+                            // 添加"open"文字标签
+                            Text("open")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 2)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .fill(Color.green)
+                                )
+                        }
+                        .padding(8)
+                    }
+                    Spacer()
+                }
+                .frame(width: frameWidth, height: frameHeight)
+            }
         }
+        .buttonStyle(QRCodeButtonStyle(isPressed: isPressed))
         .contentShape(Rectangle()) // 确保整个区域可点击
         // 定位每个二维码框的位置
         .position(x: code.bounds.midX, y: code.bounds.midY + verticalOffset)
