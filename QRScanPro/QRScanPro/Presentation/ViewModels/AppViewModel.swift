@@ -17,20 +17,20 @@ class AppViewModel: ObservableObject {
     func subscribe(to plan: SubscriptionPlan) {
         // TODO: 实现 StoreKit 订阅购买
         // 这里是模拟订阅成功
-//        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-//            self.isSubscribed = true
-//            // 保存订阅状态
-//            UserDefaults.standard.set(true, forKey: "isSubscribed")
-//        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+            self.isSubscribed = true
+            // 保存订阅状态
+            UserDefaults.standard.set(true, forKey: "isSubscribed")
+        }
     }
     
     func restorePurchases() {
         // TODO: 实现恢复购买功能
         // 这里是模拟恢复购买
-//        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-//            self.isSubscribed = true
-//            UserDefaults.standard.set(true, forKey: "isSubscribed")
-//        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+            self.isSubscribed = true
+            UserDefaults.standard.set(true, forKey: "isSubscribed")
+        }
     }
     
     // MARK: - Scan Items

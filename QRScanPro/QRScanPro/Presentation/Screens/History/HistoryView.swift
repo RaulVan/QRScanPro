@@ -2,6 +2,8 @@ import SwiftUI
 
 struct HistoryView: View {
     @State private var selectedTab = 0
+    @EnvironmentObject var historyManager: HistoryManager
+    @State private var selectedRecord: ScanRecord?
     
     var body: some View {
         NavigationView {
@@ -11,12 +13,31 @@ struct HistoryView: View {
                     .padding()
                 
                 if selectedTab == 0 {
-                    ScannedHistoryList()
+                    ScannedHistoryList(records: historyManager.scannedRecords, selectedRecord: $selectedRecord)
                 } else {
-                    GeneratedHistoryList()
+                    GeneratedHistoryList(records: historyManager.generatedRecords, selectedRecord: $selectedRecord)
                 }
             }
             .navigationTitle("History")
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(action: {
+                        if selectedTab == 0 {
+                            historyManager.clearScannedRecords()
+                        } else {
+                            historyManager.clearGeneratedRecords()
+                        }
+                    }) {
+                        Image(systemName: "trash")
+                            .foregroundColor(.red)
+                    }
+                }
+            }
+            .sheet(item: $selectedRecord) { record in
+                NavigationView {
+                    RecordDetailView(record: record)
+                }
+            }
         }
     }
 }
@@ -70,31 +91,88 @@ struct SegmentButton: View {
 }
 
 struct ScannedHistoryList: View {
-    var body: some View {
-        List {
-            Section(header: Text("Today")) {
-                HistoryItem(icon: "envelope.fill", title: "Email", subtitle: "brad.wheeler@example.com", color: .pink)
-                HistoryItem(icon: "person.crop.circle.fill", title: "Contact", subtitle: "Marvin Williamson", color: .orange)
-            }
-            
-            Section(header: Text("Yesterday")) {
-                HistoryItem(icon: "phone.fill", title: "Phone", subtitle: "(702) 555-0122", color: .green)
-                HistoryItem(icon: "globe", title: "Website", subtitle: "http://www.example.com", color: .blue)
+    let records: [ScanRecord]
+    @Binding var selectedRecord: ScanRecord?
+    
+    var groupedRecords: [(String, [ScanRecord])] {
+        let calendar = Calendar.current
+        let grouped = Dictionary(grouping: records) { record in
+            if calendar.isDateInToday(record.timestamp) {
+                return "Today"
+            } else if calendar.isDateInYesterday(record.timestamp) {
+                return "Yesterday"
+            } else {
+                let formatter = DateFormatter()
+                formatter.dateFormat = "MMM d, yyyy"
+                return formatter.string(from: record.timestamp)
             }
         }
-        .listStyle(InsetGroupedListStyle())
+        return grouped.sorted { $0.key > $1.key }
+    }
+    
+    var body: some View {
+        List {
+            ForEach(groupedRecords, id: \.0) { section in
+                Section(header: Text(section.0)) {
+                    ForEach(section.1) { record in
+                        HistoryItem(
+                            icon: record.type.icon,
+                            title: record.type.rawValue.capitalized,
+                            subtitle: record.content,
+                            color: record.type.color
+                        )
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            selectedRecord = record
+                        }
+                    }
+                }
+            }
+        }
+        .listStyle(.insetGrouped)
     }
 }
 
 struct GeneratedHistoryList: View {
-    var body: some View {
-        List {
-            Section(header: Text("Recent")) {
-                HistoryItem(icon: "wifi", title: "WiFi", subtitle: "Home Network", color: .red)
-                HistoryItem(icon: "message.fill", title: "Message", subtitle: "Meeting at 3 PM", color: .purple)
+    let records: [ScanRecord]
+    @Binding var selectedRecord: ScanRecord?
+    
+    var groupedRecords: [(String, [ScanRecord])] {
+        let calendar = Calendar.current
+        let grouped = Dictionary(grouping: records) { record in
+            if calendar.isDateInToday(record.timestamp) {
+                return "Today"
+            } else if calendar.isDateInYesterday(record.timestamp) {
+                return "Yesterday"
+            } else {
+                let formatter = DateFormatter()
+                formatter.dateFormat = "MMM d, yyyy"
+                return formatter.string(from: record.timestamp)
             }
         }
-        .listStyle(InsetGroupedListStyle())
+        return grouped.sorted { $0.key > $1.key }
+    }
+    
+    var body: some View {
+        List {
+            ForEach(groupedRecords, id: \.0) { section in
+                Section(header: Text(section.0)) {
+                    ForEach(section.1) { record in
+                        HistoryItem(
+                            icon: record.type.icon,
+                            title: record.type.rawValue.capitalized,
+                            subtitle: record.content,
+                            color: record.type.color
+                        )
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            selectedRecord = record
+                        }
+                    }
+                }
+            }
+        }
+        .listStyle(.insetGrouped)
     }
 }
 
@@ -129,6 +207,73 @@ struct HistoryItem: View {
     }
 }
 
+struct RecordDetailView: View {
+    let record: ScanRecord
+    @Environment(\.dismiss) var dismiss
+    
+    var body: some View {
+        List {
+            Section {
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack {
+                        Image(systemName: record.type.icon)
+                            .font(.title)
+                            .foregroundColor(record.type.color)
+                        Text(record.type.rawValue.capitalized)
+                            .font(.headline)
+                    }
+                    
+                    Text(record.content)
+                        .font(.body)
+                }
+                .padding(.vertical, 8)
+            }
+            
+            Section {
+                HStack {
+                    Text("Scanned on")
+                    Spacer()
+                    Text(record.timestamp, style: .date)
+                        .foregroundColor(.secondary)
+                }
+                
+                HStack {
+                    Text("Time")
+                    Spacer()
+                    Text(record.timestamp, style: .time)
+                        .foregroundColor(.secondary)
+                }
+            }
+            
+            Section {
+                Button(action: {
+                    UIPasteboard.general.string = record.content
+                }) {
+                    Label("Copy to Clipboard", systemImage: "doc.on.doc")
+                }
+                
+                if let url = URL(string: record.content), UIApplication.shared.canOpenURL(url) {
+                    Button(action: {
+                        UIApplication.shared.open(url)
+                    }) {
+                        Label("Open Link", systemImage: "safari")
+                    }
+                }
+            }
+        }
+        .navigationTitle("Details")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button("Done") {
+                    dismiss()
+                }
+            }
+        }
+    }
+}
+
 #Preview {
     HistoryView()
+        .environmentObject(HistoryManager())
 } 

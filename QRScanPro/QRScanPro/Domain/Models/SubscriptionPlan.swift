@@ -56,8 +56,8 @@ enum SubscriptionPlan: Equatable {
     var features: [String] {
         return [
             "Advanced analytics on your codes",
-            "Unlimited Exports & Folders",
-            "Batch Scan & Pin",
+//            "Unlimited Exports & Folders",
+//            "Batch Scan & Pin",
             "Protect Custom QR Codes",
             "NO Ads"
         ]

@@ -3,7 +3,7 @@ import SwiftUI
 struct SubscriptionView: View {
     @EnvironmentObject var viewModel: AppViewModel
     @Environment(\.dismiss) var dismiss
-    @State private var selectedPlan: SubscriptionPlan?
+    @State private var selectedPlan: SubscriptionPlan = .quarterly  // 默认选中 3 个月套餐
     @State private var showMainView = false
     let showCloseButton: Bool
     
@@ -52,10 +52,10 @@ struct SubscriptionView: View {
             ZStack {
                 Circle()
                     .fill(Color.purple.opacity(0.2))
-                    .frame(width: 200, height: 200)
+                    .frame(width: 100, height: 100)
                 
                 Image(systemName: "qrcode.viewfinder")
-                    .font(.system(size: 80))
+                    .font(.system(size: 50))
                     .foregroundColor(.purple)
             }
             
@@ -81,6 +81,9 @@ struct SubscriptionView: View {
                 plan: .trial,
                 isSelected: selectedPlan == .trial,
                 action: { selectedPlan = .trial }
+            ).overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(selectedPlan == .trial ? Color.purple : Color.clear, lineWidth: 2)
             )
             
             // 3个月套餐（推荐）
@@ -90,9 +93,8 @@ struct SubscriptionView: View {
                 action: { selectedPlan = .quarterly }
             )
             .overlay(
-                selectedPlan == nil ? 
                 RoundedRectangle(cornerRadius: 12)
-                    .stroke(Color.purple, lineWidth: 2) : nil
+                    .stroke(selectedPlan == .quarterly ? Color.purple : Color.clear, lineWidth: 2)
             )
             
             // 1个月套餐
@@ -101,16 +103,18 @@ struct SubscriptionView: View {
                 isSelected: selectedPlan == .monthly,
                 action: { selectedPlan = .monthly }
             )
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(selectedPlan == .monthly ? Color.purple : Color.clear, lineWidth: 2)
+            )
         }
     }
     
     private var termsSection: some View {
         VStack(spacing: 8) {
             Button(action: {
-                if let plan = selectedPlan {
-                    viewModel.subscribe(to: plan)
-                    dismiss()
-                }
+                viewModel.subscribe(to: selectedPlan)
+                dismiss()
             }) {
                 Text("Buy")
                     .fontWeight(.semibold)
@@ -122,7 +126,6 @@ struct SubscriptionView: View {
                             .fill(Color.green)
                     )
             }
-            .disabled(selectedPlan == nil)
             
             Button(action: {
                 viewModel.restorePurchases()
@@ -167,6 +170,7 @@ struct SubscriptionPlanRow: View {
             HStack {
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                     .foregroundColor(isSelected ? .purple : .gray)
+                    .font(.system(size: 20))
                 
                 VStack(alignment: .leading) {
                     Text(plan.title)
@@ -192,3 +196,12 @@ struct SubscriptionPlanRow: View {
     SubscriptionView(showCloseButton: true)
         .environmentObject(AppViewModel())
 } 
+
+#Preview {
+    SubscriptionPlanRow(
+        plan: .quarterly,
+        isSelected: true,
+        action: {  }
+    )
+}
+

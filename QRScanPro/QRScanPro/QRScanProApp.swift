@@ -10,11 +10,13 @@ import SwiftUI
 @main
 struct QRScanProApp: App {
     @StateObject private var viewModel = AppViewModel()
+    @StateObject private var historyManager = HistoryManager()
     
     var body: some Scene {
         WindowGroup {
             LaunchScreenView()
                 .environmentObject(viewModel)
+                .environmentObject(historyManager)
         }
     }
 }

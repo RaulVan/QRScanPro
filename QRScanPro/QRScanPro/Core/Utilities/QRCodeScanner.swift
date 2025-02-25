@@ -46,7 +46,14 @@ class QRCodeScanner: NSObject, ObservableObject {
             // 初始化和配置预览层
             let previewLayer = AVCaptureVideoPreviewLayer(session: captureSession)
             previewLayer.videoGravity = .resizeAspectFill
-            previewLayer.connection?.videoOrientation = .portrait
+            
+            // 设置视频方向为横向
+            if #available(iOS 17.0, *) {
+                previewLayer.connection?.videoRotationAngle = 90 // 90度表示横向
+            } else {
+                previewLayer.connection?.videoOrientation = .landscapeRight
+            }
+            
             self.previewLayer = previewLayer
             
             // 开始会话
@@ -175,6 +182,10 @@ class QRCodeScanner: NSObject, ObservableObject {
     
     func getPreviewLayer() -> AVCaptureVideoPreviewLayer? {
         return previewLayer
+    }
+    
+    func clearScannedCodes() {
+        scannedCodes.removeAll()
     }
     
     func convertToViewCoordinates(_ bounds: CGRect) -> CGRect? {

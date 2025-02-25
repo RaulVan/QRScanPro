@@ -4,6 +4,7 @@ struct ScanResultView: View {
     let code: String
     let onRescan: () -> Void
     @Environment(\.dismiss) var dismiss
+    @EnvironmentObject var historyManager: HistoryManager
     
     var body: some View {
         NavigationView {
@@ -68,9 +69,13 @@ struct ScanResultView: View {
                 }
             }
         }
+        .onAppear {
+            historyManager.addScannedRecord(code)
+        }
     }
 }
 
 #Preview {
     ScanResultView(code: "https://www.example.com", onRescan: {})
+        .environmentObject(HistoryManager())
 } 

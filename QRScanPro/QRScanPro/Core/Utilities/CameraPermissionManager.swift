@@ -1,6 +1,30 @@
 import AVFoundation
 import Photos
 
+
+enum PermissionType {
+    case camera
+    case photoLibrary
+    
+    var title: String {
+        switch self {
+        case .camera:
+            return "Camera Access Denied"
+        case .photoLibrary:
+            return "Photo Library Access Denied"
+        }
+    }
+    
+    var message: String {
+        switch self {
+        case .camera:
+            return "Please allow camera access in Settings to scan QR codes."
+        case .photoLibrary:
+            return "Please allow photo library access in Settings to select photos."
+        }
+    }
+}
+
 class CameraPermissionManager {
     static func requestCameraPermission(completion: @escaping (Bool) -> Void) {
         switch AVCaptureDevice.authorizationStatus(for: .video) {
