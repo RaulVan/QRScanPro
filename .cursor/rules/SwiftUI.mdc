@@ -8,3 +8,4 @@ globs:
 1. 遵循最新的 苹果SwiftUI开发文档 https://developer.apple.com/documentation/swiftui/
 2. 不需要关注UIKit导入问题
 3. AppUI界面、文本内容仅使用英文，不要使用中文。
+4. Deployment Target 默认设置为 iOS

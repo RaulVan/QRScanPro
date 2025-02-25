@@ -22,7 +22,7 @@ struct ProBannerView: View {
                             .foregroundColor(.primary)
                         
                         VStack(alignment: .leading, spacing: 4) {
-                            FeatureText(text: "Batch Scan & Pin")
+                            // FeatureText(text: "Batch Scan & Pin")
                             FeatureText(text: "Protect Custom QR Codes")
                             FeatureText(text: "NO Ads")
                         }
