@@ -1,4 +1,5 @@
 import SwiftUI
+import CoreImage.CIFilterBuiltins
 
 struct ScanResultView: View {
     let code: String
@@ -9,10 +10,22 @@ struct ScanResultView: View {
     var body: some View {
         NavigationView {
             VStack(spacing: 20) {
+                
+                // 扫描的二维码图片 距离顶部100
+                if let qrImage = generateQRCode(from: code) {
+                    Image(uiImage: qrImage)
+                        .resizable()
+                        .interpolation(.none)
+                        .scaledToFit()
+                        .frame(width: 100, height: 100)
+                        .padding(.bottom)
+                        .padding(.top, 50) // 添加顶部间距
+                }
+                
                 // QR Code 内容
                 ScrollView {
                     VStack(alignment: .leading, spacing: 16) {
-                        Text("Scanned Content")
+                        Text("Content")
                             .font(.headline)
                             .foregroundColor(.secondary)
                         
@@ -25,6 +38,7 @@ struct ScanResultView: View {
                                     .shadow(color: .gray.opacity(0.2), radius: 5)
                             )
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading) // 使 VStack 填充可用宽度
                     .padding()
                 }
                 
@@ -73,9 +87,24 @@ struct ScanResultView: View {
             historyManager.addScannedRecord(code)
         }
     }
+
+    // 生成二维码图片的函数
+    func generateQRCode(from string: String) -> UIImage? {
+        let context = CIContext()
+        let filter = CIFilter.qrCodeGenerator()
+        filter.message = Data(string.utf8)
+
+        if let outputImage = filter.outputImage {
+            if let cgimg = context.createCGImage(outputImage, from: outputImage.extent) {
+                return UIImage(cgImage: cgimg)
+            }
+        }
+
+        return nil
+    }
 }
 
 #Preview {
-    ScanResultView(code: "https://www.example.com", onRescan: {})
+    ScanResultView(code: "@ScanResultView.swift  优化扫描结果UI：1. 添加扫描的二维码图 2. 扫描内容布局调整更合理些。We're experiencing high demand for Claude 3.7 Sonnet right now. Please try again in a few minutes.", onRescan: {})
         .environmentObject(HistoryManager())
 } 

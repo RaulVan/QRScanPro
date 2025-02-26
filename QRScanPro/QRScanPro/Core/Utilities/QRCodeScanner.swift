@@ -85,7 +85,7 @@ class QRCodeScanner: NSObject, ObservableObject {
         
         // 设置最小帧率
         device.activeVideoMinFrameDuration = CMTime(value: 1, timescale: 30)
-        // device.activeVideoMaxFrameDuration = CMTime(value: 1, timescale: 30)    
+        // device.activeVideoMaxFrameDuration = CMTime(value: 1, timescale: 30)
         
         device.unlockForConfiguration()
     }
@@ -196,8 +196,8 @@ class QRCodeScanner: NSObject, ObservableObject {
 
 extension QRCodeScanner: AVCaptureMetadataOutputObjectsDelegate {
     func metadataOutput(_ output: AVCaptureMetadataOutput, didOutput metadataObjects: [AVMetadataObject], from connection: AVCaptureConnection) {
-        // 清除之前的扫描结果
-        scannedCodes.removeAll()
+        // 创建新的扫描结果数组
+        var newCodes: [QRCodeResult] = []
         
         // 处理所有检测到的二维码
         for metadataObject in metadataObjects {
@@ -210,8 +210,27 @@ extension QRCodeScanner: AVCaptureMetadataOutputObjectsDelegate {
                     content: stringValue,
                     bounds: transformedObject.bounds
                 )
-                scannedCodes.append(qrCode)
+                newCodes.append(qrCode)
+            }
+        }
+        
+        // 比较新旧扫描结果的内容
+        let shouldUpdate = shouldUpdateScannedCodes(newCodes: newCodes, oldCodes: scannedCodes)
+        
+        if shouldUpdate {
+            DispatchQueue.main.async { [weak self] in
+                self?.scannedCodes = newCodes
             }
         }
     }
-} 
+    
+    // 比较新旧扫描结果，只比较内容而不是位置
+    private func shouldUpdateScannedCodes(newCodes: [QRCodeResult], oldCodes: [QRCodeResult]) -> Bool {
+        guard newCodes.count == oldCodes.count else { return true }
+        
+        let newContents = Set(newCodes.map { $0.content })
+        let oldContents = Set(oldCodes.map { $0.content })
+        
+        return newContents != oldContents
+    }
+}

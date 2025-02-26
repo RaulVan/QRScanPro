@@ -41,9 +41,9 @@ struct ScannerView: View {
                             
                             Spacer()
                             
-                            Button(action: { 
+                            Button(action: {
                                 print("闪光灯切换: \(!scanner.isFlashOn)")
-                                scanner.toggleFlash() 
+                                scanner.toggleFlash()
                             }) {
                                 Image(systemName: scanner.isFlashOn ? "flashlight.on.fill" : "flashlight.off.fill")
                                     .foregroundColor(.white)
@@ -120,9 +120,23 @@ struct ScannerView: View {
                         .padding(.bottom, 40)
                     }
                     
+                    //                    QRCodeOverlayView(codes: [
+                    //                        QRCodeResult(content: "https://example.com", bounds: CGRect(x: 100, y: 100, width: 100, height: 100)),
+                    ////                        QRCodeResult(content: "https://apple.com", bounds: CGRect(x: 300, y: 100, width: 100, height: 100)),
+                    //                    ]) { code in
+                    //                        print("预览中选择了二维码: \(code.content)")
+                    //                    }.zIndex(99) // 确保在最上层
+                    //                        .id("qrCodeOverlay-\(scanner.scannedCodes.count)") // 添加id以避免不必要的重绘
+                    //                        .allowsHitTesting(true) // 明确允许点击
+                    //                        .onAppear {
+                    //                            print("ScannerView - 二维码覆盖层出现，数量: \(scanner.scannedCodes.count)")
+                    //                        }
+                    
                     // 3. 最顶层是二维码覆盖层，确保它在最上面可以接收点击
                     if !scanner.scannedCodes.isEmpty {
-                        // 使用真实扫描到的二维码，而不是测试数据
+                        // 使用合并后的二维码覆盖视图
+//                        let codes = [QRCodeResult(content: "https://example.com", bounds: CGRect(x: 100, y: 100, width: 100, height: 100)),
+//                                     QRCodeResult(content: "https://apple.com", bounds: CGRect(x: 300, y: 100, width: 100, height: 100))]
                         QRCodeOverlayView(codes: scanner.scannedCodes) { code in
                             print("ScannerView - 选择二维码: \(code.content)")
                             print("ScannerView - 选择处理开始 - 二维码详情:")
@@ -137,10 +151,10 @@ struct ScannerView: View {
                             print("ScannerView - 已设置选中的二维码，准备显示结果")
                             
                             // 延迟一下再弹出结果页面，确保视觉反馈完成
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+//                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                                 showResult = true
                                 print("ScannerView - 结果页面即将显示: showResult = true")
-                            }
+//                            }
                         }
                         .zIndex(100) // 确保在最上层
                         .id("qrCodeOverlay-\(scanner.scannedCodes.count)") // 添加id以避免不必要的重绘
@@ -168,15 +182,15 @@ struct ScannerView: View {
                         .allowsHitTesting(true) // 确保横幅可以接收点击事件
                     }
                 }
-                #if compiler(>=5.9)
+#if compiler(>=5.9)
                 .onChange(of: scanner.scannedCodes) { oldCodes, newCodes in
                     handleScannedCodesChange(newCodes)
                 }
-                #else
+#else
                 .onChange(of: scanner.scannedCodes) { codes in
                     handleScannedCodesChange(codes)
                 }
-                #endif
+#endif
             } else {
                 Color.black
                     .edgesIgnoringSafeArea(.all)
@@ -190,8 +204,8 @@ struct ScannerView: View {
             print("扫描页面消失")
             scanner.stop()
             isScanning = false
-//            autoOpenTimer?.invalidate()
-//            autoOpenTimer = nil
+            //            autoOpenTimer?.invalidate()
+            //            autoOpenTimer = nil
         }
         .sheet(isPresented: $showSubscription) {
             SubscriptionView(showCloseButton: true)
@@ -200,7 +214,7 @@ struct ScannerView: View {
             ImagePicker(image: $selectedImage, onScan: handleImageScan)
         }
         .sheet(isPresented: $showResult) {
-//            print("结果页面已显示，显示二维码内容: \(selectedCode?.content ?? "无内容")")
+            //            print("结果页面已显示，显示二维码内容: \(selectedCode?.content ?? "无内容")")
             if let code = selectedCode {
                 ScanResultView(code: code.content) {
                     print("用户点击了'再次扫描'按钮，将调用resetScanning()")
@@ -271,39 +285,26 @@ struct ScannerView: View {
     }
     
     private func handleScannedCodesChange(_ codes: [QRCodeResult]) {
-//        print("扫描到的二维码数量变化: \(codes.count)")
-        if !codes.isEmpty {
-//            // 打印所有扫描到的二维码
-//            for (index, code) in codes.enumerated() {
-//                print("二维码[\(index)]: \(code.content), 类型: \(code.type.rawValue), 位置: \(code.bounds)")
-//            }
-            
-            // 扫描到二维码时
-            if isScanning {
-                print("扫描到二维码，停止扫描动画")
-                // 停止动画
-                withAnimation {
-                    isScanning = false
-                }
-                
-                // 触觉反馈提示用户已扫描到二维码
-                hapticFeedback()
-                
-                // 不再自动显示结果，让用户主动点击选择
-                // 即使只有一个二维码也不自动弹出
-            }
-        } 
-        // 如果不再有二维码且扫描已停止，恢复扫描
-        else if codes.isEmpty && !isScanning {
-            print("未检测到二维码，恢复扫描")
-            withAnimation {
-                isScanning = true
-                animationOffset = 0  // 重置动画位置到顶部
-                
-                // 触发一次完整动画周期
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+        // 使用 DispatchQueue 延迟更新UI，避免频繁刷新
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            if !codes.isEmpty {
+                if isScanning {
+                    print("扫描到二维码，停止扫描动画")
                     withAnimation {
-                        self.animationOffset = 270  // 移动到底部
+                        isScanning = false
+                    }
+                    hapticFeedback()
+                }
+            } else if codes.isEmpty && !isScanning {
+                print("未检测到二维码，恢复扫描")
+                withAnimation {
+                    isScanning = true
+                    animationOffset = 0
+                    
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        withAnimation {
+                            self.animationOffset = 270
+                        }
                     }
                 }
             }

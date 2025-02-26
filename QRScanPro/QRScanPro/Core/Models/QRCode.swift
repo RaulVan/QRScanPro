@@ -12,9 +12,7 @@ struct QRCodeResult: Identifiable, Equatable {
     }
     
     static func == (lhs: QRCodeResult, rhs: QRCodeResult) -> Bool {
-        lhs.id == rhs.id &&
-        lhs.content == rhs.content &&
-        lhs.bounds == rhs.bounds
+        return lhs.content == rhs.content
     }
 }
 
