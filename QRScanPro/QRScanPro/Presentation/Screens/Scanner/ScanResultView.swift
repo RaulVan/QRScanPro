@@ -31,6 +31,7 @@ struct ScanResultView: View {
                         
                         Text(code)
                             .font(.body)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                             .padding()
                             .background(
                                 RoundedRectangle(cornerRadius: 12)
@@ -38,8 +39,8 @@ struct ScanResultView: View {
                                     .shadow(color: .gray.opacity(0.2), radius: 5)
                             )
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading) // 使 VStack 填充可用宽度
-                    .padding()
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 16)
                 }
                 
                 // 操作按钮
@@ -71,7 +72,7 @@ struct ScanResultView: View {
                     }
                     .buttonStyle(.borderedProminent)
                 }
-                .padding()
+                .padding(.horizontal, 16) // 添加左右两边的间距
             }
             .navigationTitle("Scan Result")
             .navigationBarTitleDisplayMode(.inline)
@@ -105,6 +106,6 @@ struct ScanResultView: View {
 }
 
 #Preview {
-    ScanResultView(code: "@ScanResultView.swift  优化扫描结果UI：1. 添加扫描的二维码图 2. 扫描内容布局调整更合理些。We're experiencing high demand for Claude 3.7 Sonnet right now. Please try again in a few minutes.", onRescan: {})
+    ScanResultView(code: "https://explese.com", onRescan: {})
         .environmentObject(HistoryManager())
 } 
