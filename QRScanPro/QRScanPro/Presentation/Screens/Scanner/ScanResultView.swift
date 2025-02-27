@@ -31,6 +31,7 @@ struct ScanResultView: View {
                         
                         Text(code)
                             .font(.body)
+//                            .truncationMode(.)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding()
                             .background(

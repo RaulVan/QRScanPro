@@ -13,26 +13,16 @@ struct HistoryView: View {
                     .padding()
                 
                 if selectedTab == 0 {
-                    ScannedHistoryList(records: historyManager.scannedRecords, selectedRecord: $selectedRecord)
+                    ScannedHistoryList(records: historyManager.scannedRecords, selectedRecord: $selectedRecord, onDelete: { record in
+                        historyManager.removeScannedRecord(record)
+                    })
                 } else {
-                    GeneratedHistoryList(records: historyManager.generatedRecords, selectedRecord: $selectedRecord)
+                    GeneratedHistoryList(records: historyManager.generatedRecords, selectedRecord: $selectedRecord, onDelete: { record in
+                        historyManager.removeGeneratedRecord(record)
+                    })
                 }
             }
             .navigationTitle("History")
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: {
-                        if selectedTab == 0 {
-                            historyManager.clearScannedRecords()
-                        } else {
-                            historyManager.clearGeneratedRecords()
-                        }
-                    }) {
-                        Image(systemName: "trash")
-                            .foregroundColor(.red)
-                    }
-                }
-            }
             .sheet(item: $selectedRecord) { record in
                 NavigationView {
                     RecordDetailView(record: record)
@@ -93,6 +83,7 @@ struct SegmentButton: View {
 struct ScannedHistoryList: View {
     let records: [ScanRecord]
     @Binding var selectedRecord: ScanRecord?
+    let onDelete: (ScanRecord) -> Void
     
     var groupedRecords: [(String, [ScanRecord])] {
         let calendar = Calendar.current
@@ -125,6 +116,13 @@ struct ScannedHistoryList: View {
                         .onTapGesture {
                             selectedRecord = record
                         }
+                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                            Button(role: .destructive) {
+                                onDelete(record)
+                            } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
+                        }
                     }
                 }
             }
@@ -136,6 +134,7 @@ struct ScannedHistoryList: View {
 struct GeneratedHistoryList: View {
     let records: [ScanRecord]
     @Binding var selectedRecord: ScanRecord?
+    let onDelete: (ScanRecord) -> Void
     
     var groupedRecords: [(String, [ScanRecord])] {
         let calendar = Calendar.current
@@ -167,6 +166,13 @@ struct GeneratedHistoryList: View {
                         .contentShape(Rectangle())
                         .onTapGesture {
                             selectedRecord = record
+                        }
+                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                            Button(role: .destructive) {
+                                onDelete(record)
+                            } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
                         }
                     }
                 }
