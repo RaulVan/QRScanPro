@@ -4,10 +4,14 @@ import SwiftUI
 struct QRCodeFormView: View {
     let type: QRCodeType
     let historyManager: HistoryManager
+    @EnvironmentObject private var generateViewModel: GenerateViewModel
     
     @Environment(\.dismiss) var dismiss
-    @State private var generatedCode: String = ""
+    @State private var generatedContent: String = ""
     @State private var showResult = false
+    @State private var showError = false
+    @State private var errorMessage = ""
+    @State private var currentContent: String? = nil
     
     // 各种表单字段
     @State private var email = ""
@@ -20,6 +24,7 @@ struct QRCodeFormView: View {
     @State private var address = ""
     
     @State private var url = "https://"
+    @State private var urlProtocol = "https://"
     
     @State private var message = ""
     @State private var recipient = ""
@@ -103,9 +108,17 @@ struct QRCodeFormView: View {
                 }
             }
             .sheet(isPresented: $showResult) {
-                GeneratedQRView(code: generatedCode, type: type) {
-                    dismiss()
+                if let content = generateViewModel.generatedContent, !content.isEmpty {
+                    GeneratedQRView(code: content, type: type) {
+                        dismiss()
+                        generateViewModel.reset()
+                    }
                 }
+            }
+            .alert("Invalid Input", isPresented: $showError) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text(errorMessage)
             }
         }
     }
@@ -149,7 +162,21 @@ struct QRCodeFormView: View {
     
     var urlForm: some View {
         VStack(spacing: 15) {
-            FormField(title: "URL", value: $url, placeholder: "https://example.com")
+            // 添加 URL 类型选择
+            Picker("Protocol", selection: $urlProtocol) {
+                Text("https://").tag("https://")
+                Text("http://").tag("http://")
+            }
+            .pickerStyle(SegmentedPickerStyle())
+            
+            FormField(
+                title: "URL",
+                value: Binding(
+                    get: { url.replacingOccurrences(of: "https://", with: "").replacingOccurrences(of: "http://", with: "") },
+                    set: { url = urlProtocol + $0 }
+                ),
+                placeholder: "example.com"
+            )
         }
         .padding(.horizontal)
     }
@@ -239,8 +266,21 @@ struct QRCodeFormView: View {
     
     // 生成二维码
     func generateQRCode() {
+        // 重置状态
+        errorMessage = ""
+        var content = ""
+        var hasContent = false
+        
         switch type {
         case .email:
+            // 验证邮箱
+            if email.isEmpty {
+                // 显示错误提示
+                errorMessage = "Please enter a valid email"
+                showError = true
+                return
+            }
+            
             var emailCode = "mailto:\(email)"
             if !subject.isEmpty || !connent.isEmpty {
                 emailCode += "?"
@@ -252,9 +292,17 @@ struct QRCodeFormView: View {
                     emailCode += "body=\(connent.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")"
                 }
             }
-            generatedCode = emailCode
+            content = emailCode
+            hasContent = true
             
         case .contact:
+            // 至少需要姓名
+            if firstName.isEmpty && lastName.isEmpty {
+                errorMessage = "Please enter both first and last name"
+                showError = true
+                return
+            }
+            
             // vCard format
             let vcard = """
             BEGIN:VCARD
@@ -265,40 +313,101 @@ struct QRCodeFormView: View {
             ADR:\(address)
             END:VCARD
             """
-            generatedCode = vcard
+            content = vcard
+            hasContent = true
             
         case .phone:
-            generatedCode = "tel:\(phone)"
+            if phone.isEmpty {
+                errorMessage = "Please enter a valid phone number"
+                showError = true
+                return
+            }
+            content = "tel:\(phone)"
+            hasContent = true
             
         case .url:
-            generatedCode = url
+            var processedUrl = url
+                .replacingOccurrences(of: "https://https://", with: "https://")
+                .replacingOccurrences(of: "http://http://", with: "http://")
+            
+            if !processedUrl.hasPrefix("http://") && !processedUrl.hasPrefix("https://") {
+                processedUrl = "https://" + processedUrl
+            }
+            
+            if processedUrl == "https://" || processedUrl == "http://" {
+                errorMessage = "Please enter a valid URL"
+                showError = true
+                return
+            }
+            
+            if let _ = URL(string: processedUrl) {
+                content = processedUrl
+                hasContent = true
+            } else {
+                errorMessage = "Invalid URL format"
+                showError = true
+                return
+            }
             
         case .message:
+            if recipient.isEmpty {
+                errorMessage = "Please enter a recipient"
+                showError = true
+                return
+            }
             var smsCode = "sms:\(recipient)"
             if !message.isEmpty {
                 smsCode += "?body=\(message.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")"
             }
-            generatedCode = smsCode
+            content = smsCode
+            hasContent = true
             
         case .wifi:
-            generatedCode = "WIFI:T:\(wifiType);S:\(ssid);P:\(password);;"
+            if ssid.isEmpty {
+                errorMessage = "Please enter a network name"
+                showError = true
+                return
+            }
+            content = "WIFI:T:\(wifiType);S:\(ssid);P:\(password);;"
+            hasContent = true
             
         case .clipboard:
-            if let clipboardString = UIPasteboard.general.string {
-                generatedCode = clipboardString
+            if let clipboardString = UIPasteboard.general.string, !clipboardString.isEmpty {
+                content = clipboardString
+                hasContent = true
             } else {
+                errorMessage = "No text found in clipboard"
+                showError = true
                 return
             }
             
         case .location:
-            generatedCode = "geo:\(latitude),\(longitude)"
+            if latitude.isEmpty || longitude.isEmpty {
+                errorMessage = "Please enter both latitude and longitude"
+                showError = true
+                return
+            }
+            content = "geo:\(latitude),\(longitude)"
+            hasContent = true
             
         case .text:
-            generatedCode = text
-            
+            if text.isEmpty {
+                errorMessage = "Please enter some text"
+                showError = true
+                return
+            }
+            content = text
+            hasContent = true
         }
         
-        historyManager.addGeneratedRecord(generatedCode, type: type)
-        showResult = true
+        if hasContent && !content.isEmpty {
+            historyManager.addGeneratedRecord(content, type: type)
+            generateViewModel.generateQRCode(content, type: type)
+            showResult = true
+        } else {
+            errorMessage = "Please fill in the required fields"
+            showError = true
+            showResult = false
+        }
     }
 } 

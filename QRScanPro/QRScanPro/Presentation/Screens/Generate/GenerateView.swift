@@ -8,6 +8,7 @@ struct GenerateView: View {
     
     @State private var activeSheet: QRCodeType?
     @EnvironmentObject var historyManager: HistoryManager
+    @EnvironmentObject private var generateViewModel: GenerateViewModel
     
     var body: some View {
         NavigationView {
@@ -30,6 +31,14 @@ struct GenerateView: View {
             .sheet(item: $activeSheet) { type in
                 QRCodeFormView(type: type, historyManager: historyManager)
             }
+//            .sheet(isPresented: $generateViewModel.showResult) {
+//                if let content = generateViewModel.generatedContent,
+//                   let type = generateViewModel.currentType {
+//                    GeneratedQRView(code: content, type: type) {
+//                        generateViewModel.reset()
+//                    }
+//                }
+//            }
         }
     }
 }

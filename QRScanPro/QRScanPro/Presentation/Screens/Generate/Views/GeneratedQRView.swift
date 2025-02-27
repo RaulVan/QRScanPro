@@ -1,6 +1,7 @@
 import SwiftUI
 import CoreImage.CIFilterBuiltins
 import Photos
+import UIKit
 
 struct GeneratedQRView: View {
     // MARK: - Properties
@@ -15,19 +16,22 @@ struct GeneratedQRView: View {
     @State private var showShareSheet = false
     @State private var qrImage: UIImage? = nil
     @State private var saveStatus: SaveStatus = .none
+//    @State private var fullQRImage: UIImage? = nil
     
     // MARK: - Model
     enum SaveStatus: Equatable {
         case none
         case saving
         case success
+        case copied
         case failed(String)
         
         static func == (lhs: SaveStatus, rhs: SaveStatus) -> Bool {
             switch (lhs, rhs) {
             case (.none, .none),
                  (.saving, .saving),
-                 (.success, .success):
+                 (.success, .success),
+                 (.copied, .copied):
                 return true
             case (.failed(let lhsMessage), .failed(let rhsMessage)):
                 return lhsMessage == rhsMessage
@@ -40,6 +44,7 @@ struct GeneratedQRView: View {
             switch self {
             case .success: return "checkmark.circle.fill"
             case .failed: return "exclamationmark.circle.fill"
+            case .copied: return "doc.on.doc"
             default: return nil
             }
         }
@@ -47,7 +52,8 @@ struct GeneratedQRView: View {
         var color: Color {
             switch self {
             case .success: return .green
-            case .failed: return .red
+            case .failed: return .red   
+            case .copied: return .blue
             default: return .secondary
             }
         }
@@ -94,31 +100,63 @@ struct GeneratedQRView: View {
     private var qrCodeView: some View {
         Group {
             if let qrImage = qrImage {
-                Image(uiImage: qrImage)
-                    .resizable()
-                    .interpolation(.none)
-                    .scaledToFit()
-                    .frame(width: 250, height: 250)
-                    .padding()
+                VStack {
+                     Image(uiImage: qrImage)
+                        .interpolation(.none)
+                        .resizable()
+                        .scaledToFit()
+                        .padding(20)
+                        .frame(width: 280, height: 280)
+                        .background(
+                            RoundedRectangle(cornerRadius: 20)
+                                .fill(Color.white)
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 20)
+                                .stroke(type.color.opacity(0.2), lineWidth: 2)
+                        )
+                        .shadow(
+                            color: Color.gray.opacity(0.2),
+                            radius: 10,
+                            x: 0,
+                            y: 5
+                        )
+                        .padding(.vertical)
+                }
+//                .id("QRCodeView")
+//                .onChange(of: qrImage) { _ in
+//                    createFullQRImage()
+//                }
+            } else {
+                loadingView
+                    .frame(width: 280, height: 280)
                     .background(
                         RoundedRectangle(cornerRadius: 20)
                             .fill(Color.white)
-                            .shadow(color: .gray.opacity(0.3), radius: 10)
                     )
-            } else {
-                loadingView
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 20)
+                            .stroke(type.color.opacity(0.2), lineWidth: 2)
+                    )
+                    .shadow(
+                        color: Color.gray.opacity(0.2),
+                        radius: 10,
+                        x: 0,
+                        y: 5
+                    )
             }
         }
     }
     
     private var loadingView: some View {
-        VStack {
+        VStack(spacing: 12) {
             ProgressView()
+                .scaleEffect(1.5)
             Text("Generating QR code...")
                 .foregroundColor(.secondary)
-                .padding()
+                .font(.subheadline)
         }
-        .frame(width: 250, height: 250)
+        .padding(30)
     }
     
     private var saveStatusView: some View {
@@ -138,6 +176,10 @@ struct GeneratedQRView: View {
                 
             case .failed(let message):
                 statusMessageView(message: message)
+                    .onAppear { autoDismissStatus() }
+                
+            case .copied:
+                statusMessageView(message: "Copied to Clipboard")
                     .onAppear { autoDismissStatus() }
                 
             case .none:
@@ -219,13 +261,21 @@ struct GeneratedQRView: View {
     
     // MARK: - Actions
     private func generateQRCodeOnLoad() {
-        if qrImage == nil {
-            DispatchQueue.global(qos: .userInitiated).async {
-                let generatedImage = generateQRCode(from: code)
-                DispatchQueue.main.async {
-                    qrImage = generatedImage
-                    print("QR code generation: \(qrImage != nil ? "success" : "failed")")
-                }
+        print("开始生成QR码, 内容: '\(code)'")
+        
+        // 在后台线程生成QR码
+        DispatchQueue.global(qos: .userInitiated).async {
+            guard !code.isEmpty else {
+                print("QR码内容为空，无法生成")
+                return
+            }
+            
+            let image = generateQRCode(from: code)
+            
+            // 回到主线程更新UI
+            DispatchQueue.main.async {
+                self.qrImage = image
+                print("QR码生成结果: \(image != nil ? "成功" : "失败")")
             }
         }
     }
@@ -235,22 +285,24 @@ struct GeneratedQRView: View {
         
         // Provide feedback
         let originalStatus = saveStatus
-        saveStatus = .success
+        saveStatus = .copied
         
         // Reset status after a brief moment
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            if self.saveStatus == .success {
+            if self.saveStatus == .copied {
                 self.saveStatus = originalStatus
             }
         }
     }
     
     private func shareQRCode() {
-        // Double check image exists
-        if qrImage == nil {
-            qrImage = generateQRCode(from: code)
+        if qrImage != nil {
+//            createFullQRImage()
+            showShareSheet = true
+        } else {
+            showShareSheet = false
         }
-        showShareSheet = true
+        
     }
     
     private func autoDismissStatus() {
@@ -340,24 +392,27 @@ struct GeneratedQRView: View {
     
     // MARK: - QR Code Generation
     func generateQRCode(from string: String) -> UIImage? {
+        // 再次检查字符串是否为空
         guard !string.isEmpty else { 
-            print("Cannot generate QR code from empty string")
+            print("QR码内容为空，无法生成")
             return nil 
         }
         
-        print("Generating QR code for: \(string)")
+        print("正在生成QR码: \(string)")
         
-        // 使用 CIFilter.qrCodeGenerator() 而不是通过名称创建
+        // 使用新的API方式
         let filter = CIFilter.qrCodeGenerator()
-        filter.message = Data(string.utf8)
+        let data = string.data(using: .utf8)
+        filter.setValue(data, forKey: "inputMessage")
+        filter.setValue("H", forKey: "inputCorrectionLevel") // 高纠错级别
         
         // 获取输出图像
         guard let outputImage = filter.outputImage else {
-            print("Failed to get output image from filter")
+            print("无法从滤镜获取输出图像")
             return nil
         }
         
-        // 缩放图像 (QR 码原始图像非常小)
+        // 缩放图像 (QR码原始图像非常小)
         let scale = 10.0
         let transformedImage = outputImage.transformed(
             by: CGAffineTransform(scaleX: scale, y: scale)
@@ -366,12 +421,60 @@ struct GeneratedQRView: View {
         // 创建上下文并渲染
         let context = CIContext()
         guard let cgImage = context.createCGImage(transformedImage, from: transformedImage.extent) else {
-            print("Failed to create CGImage from transformed image")
+            print("无法从变换后的图像创建CGImage")
             return nil
         }
         
         // 成功创建
-        print("QR code image created successfully")
+        print("QR码图像创建成功")
         return UIImage(cgImage: cgImage)
     }
+    
+    private func createFullQRImage() {
+        let qrCodeView = VStack {
+            Image(uiImage: qrImage!)
+                .interpolation(.none)
+                .resizable()
+                .scaledToFit()
+                .padding(20)
+                .frame(width: 280, height: 280)
+                .background(
+                    RoundedRectangle(cornerRadius: 20)
+                        .fill(Color.white)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20)
+                        .stroke(type.color.opacity(0.2), lineWidth: 2)
+                )
+                .shadow(
+                    color: Color.gray.opacity(0.2),
+                    radius: 10,
+                    x: 0,
+                    y: 5
+                )
+        }
+        .padding()
+        .background(Color.white)
+        
+//        fullQRImage = qrCodeView.asUIImage()
+//        showShareSheet = true
+    }
 } 
+
+
+extension View {
+    func asUIImage() -> UIImage {
+        let controller = UIHostingController(rootView: self)
+        let view = controller.view
+
+        let targetSize = controller.view.intrinsicContentSize
+        view?.bounds = CGRect(origin: .zero, size: targetSize)
+        view?.backgroundColor = .clear
+
+        let renderer = UIGraphicsImageRenderer(size: targetSize)
+
+        return renderer.image { _ in
+            view?.drawHierarchy(in: controller.view.bounds, afterScreenUpdates: true)
+        }
+    }
+}
