@@ -61,7 +61,7 @@ struct ScannerView: View {
                         // Scan frame
                         ZStack {
                             // Scan frame corners
-                            ScannerCorners(width: 280, height: 280, color: .white, cornerLength: 30, lineWidth: 5).hidden()
+                            ScannerCorners(width: 280, height: 280, color: .white, cornerLength: 30, lineWidth: 5)
                             
                             // Scanning line animation
                             if isScanning {
@@ -88,7 +88,7 @@ struct ScannerView: View {
                                     value: animationOffset
                                 )
                                 .clipShape(Rectangle().size(width: 270, height: 280))
-                                .hidden()
+                                
                             }
                             
                             // 当扫描到二维码时，添加一个柔和的高亮效果
@@ -97,7 +97,7 @@ struct ScannerView: View {
                                     .stroke(Color.green, lineWidth: 2)
                                     .frame(width: 270, height: 270)
                                     .opacity(0.6)
-                                    .hidden()
+                                
                             }
                         }
                         .frame(width: 280, height: 280)
@@ -111,7 +111,7 @@ struct ScannerView: View {
                             .background(Color.black.opacity(0.3))
                             .cornerRadius(8)
                             .padding(.top, 30)
-                            .hidden()
+                        
                         
                         Spacer()
                         
@@ -137,8 +137,8 @@ struct ScannerView: View {
                     // 3. 最顶层是二维码覆盖层，确保它在最上面可以接收点击
                     if !scanner.scannedCodes.isEmpty {
                         // 使用合并后的二维码覆盖视图
-//                        let codes = [QRCodeResult(content: "https://example.com", bounds: CGRect(x: 100, y: 100, width: 100, height: 100)),
-//                                     QRCodeResult(content: "https://apple.com", bounds: CGRect(x: 300, y: 100, width: 100, height: 100))]
+                        //                        let codes = [QRCodeResult(content: "https://example.com", bounds: CGRect(x: 100, y: 100, width: 100, height: 100)),
+                        //                                     QRCodeResult(content: "https://apple.com", bounds: CGRect(x: 300, y: 100, width: 100, height: 100))]
                         QRCodeOverlayView(codes: scanner.scannedCodes) { code in
                             print("ScannerView - 选择二维码: \(code.content)")
                             print("ScannerView - 选择处理开始 - 二维码详情:")
@@ -153,10 +153,10 @@ struct ScannerView: View {
                             print("ScannerView - 已设置选中的二维码，准备显示结果")
                             
                             // 延迟一下再弹出结果页面，确保视觉反馈完成
-//                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                showResult = true
-                                print("ScannerView - 结果页面即将显示: showResult = true")
-//                            }
+                            //                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            showResult = true
+                            print("ScannerView - 结果页面即将显示: showResult = true")
+                            //                            }
                         }
                         .zIndex(100) // 确保在最上层
                         .id("qrCodeOverlay-\(scanner.scannedCodes.count)") // 添加id以避免不必要的重绘
