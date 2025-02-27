@@ -14,12 +14,36 @@ struct QRScanProApp: App {
     @StateObject private var historyManager = HistoryManager()
     @StateObject private var generateViewModel = GenerateViewModel()
     
+    // 添加状态来控制是否显示启动屏幕
+    @State private var showLaunchScreen = true
+    
     var body: some Scene {
         WindowGroup {
-            MainTabView()
-                .environmentObject(viewModel)
-                .environmentObject(historyManager)
-                .environmentObject(generateViewModel)
+            ZStack {
+                // 主视图
+                MainTabView()
+                    .environmentObject(viewModel)
+                    .environmentObject(historyManager)
+                    .environmentObject(generateViewModel)
+                
+                // 启动屏幕
+                if showLaunchScreen {
+                    LaunchScreenView()
+                        .environmentObject(viewModel)
+                        .environmentObject(historyManager)
+                        .environmentObject(generateViewModel)
+                        .transition(.opacity)
+                        .zIndex(1)  // 确保启动屏幕在最上层
+                }
+            }
+            .onAppear {
+                // 延迟 2 秒后隐藏启动屏幕
+                // DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                //     withAnimation {
+                //         showLaunchScreen = false
+                //     }
+                // }
+            }
         }
     }
 }

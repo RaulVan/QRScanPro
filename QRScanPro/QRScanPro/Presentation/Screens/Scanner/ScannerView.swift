@@ -4,6 +4,7 @@ import UIKit
 
 struct ScannerView: View {
     @EnvironmentObject var viewModel: AppViewModel
+    @EnvironmentObject var historyManager: HistoryManager
     @StateObject private var scanner = QRCodeScanner()
     @State private var showImagePicker = false
     @State private var showSubscription = false
@@ -15,6 +16,7 @@ struct ScannerView: View {
     @State private var selectedCode: QRCodeResult?
     @State private var permissionDeniedType: PermissionType = .camera
     @State private var animationOffset: CGFloat = 0
+    // @State private var scannedCode: String?
     
     
     
@@ -216,10 +218,13 @@ struct ScannerView: View {
         .sheet(isPresented: $showResult) {
             //            print("结果页面已显示，显示二维码内容: \(selectedCode?.content ?? "无内容")")
             if let code = selectedCode {
-                ScanResultView(code: code.content) {
-                    print("用户点击了'再次扫描'按钮，将调用resetScanning()")
-                    resetScanning()
-                }
+                ScanResultView(
+                    code: code.content,
+                    onRescan: {
+                        showResult = false
+                        resetScanning()
+                    }
+                )
             }
         }
         .alert(permissionDeniedType.title, isPresented: $showPermissionDenied) {
@@ -227,6 +232,14 @@ struct ScannerView: View {
             Button("Cancel", role: .cancel) { }
         } message: {
             Text(permissionDeniedType.message)
+        }
+        .onChange(of: selectedCode) { newCode in
+            if let code = newCode {
+                selectedCode = code
+                // 添加到历史记录
+                historyManager.addScannedRecord(code.content)
+                showResult = true
+            }
         }
     }
     
