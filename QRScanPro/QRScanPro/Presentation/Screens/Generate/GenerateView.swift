@@ -6,32 +6,30 @@ struct GenerateView: View {
         GridItem(.flexible())
     ]
     
-    let categories: [(icon: String, title: String, color: Color)] = [
-        ("envelope.fill", "Email", .pink),
-        ("person.crop.circle.fill", "Contacts", .orange),
-        ("phone.fill", "Phone Number", .green),
-        ("globe", "Website URL", .blue),
-        ("message.fill", "Message", .purple),
-        ("wifi", "WiFi", .red),
-        ("doc.on.clipboard", "Clipboard URL", .cyan),
-        ("location.fill", "Location", .yellow)
-    ]
+    @State private var activeSheet: QRCodeType?
+    @EnvironmentObject var historyManager: HistoryManager
     
     var body: some View {
         NavigationView {
             ScrollView {
                 LazyVGrid(columns: columns, spacing: 20) {
-                    ForEach(categories, id: \.title) { category in
+                    ForEach(QRCodeType.allCases, id: \.self) { type in
                         CategoryButton(
-                            icon: category.icon,
-                            title: category.title,
-                            color: category.color
+                            icon: type.icon,
+                            title: type.title,
+                            color: type.color,
+                            action: {
+                                activeSheet = type
+                            }
                         )
                     }
                 }
                 .padding()
             }
             .navigationTitle("Generate")
+            .sheet(item: $activeSheet) { type in
+                QRCodeFormView(type: type, historyManager: historyManager)
+            }
         }
     }
 }
@@ -40,9 +38,10 @@ struct CategoryButton: View {
     let icon: String
     let title: String
     let color: Color
+    let action: () -> Void
     
     var body: some View {
-        Button(action: {}) {
+        Button(action: action) {
             VStack {
                 Circle()
                     .fill(color.opacity(0.2))
@@ -70,4 +69,5 @@ struct CategoryButton: View {
 
 #Preview {
     GenerateView()
+        .environmentObject(HistoryManager())
 } 

@@ -15,8 +15,13 @@ class HistoryManager: ObservableObject {
         saveData()
     }
     
-    func addGeneratedRecord(_ content: String) {
-        let record = ScanRecord(content: content, timestamp: Date())
+    func addGeneratedRecord(_ content: String, type: QRCodeType? = nil) {
+        let record = ScanRecord(
+            id: UUID(),
+            content: content,
+            type: type ?? QRCodeType.detect(from: content),
+            timestamp: Date()
+        )
         generatedRecords.insert(record, at: 0)
         saveData()
     }
