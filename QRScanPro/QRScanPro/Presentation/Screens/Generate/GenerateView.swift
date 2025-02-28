@@ -14,7 +14,7 @@ struct GenerateView: View {
         NavigationView {
             ScrollView {
                 LazyVGrid(columns: columns, spacing: 20) {
-                    ForEach(QRCodeType.allCases, id: \.self) { type in
+                    ForEach(QRCodeType.allTypes, id: \.self) { type in
                         CategoryButton(
                             icon: type.icon,
                             title: type.title,

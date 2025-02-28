@@ -184,15 +184,15 @@ struct ScannerView: View {
                         .allowsHitTesting(true) // 确保横幅可以接收点击事件
                     }
                 }
-#if compiler(>=5.9)
-                .onChange(of: scanner.scannedCodes) { oldCodes, newCodes in
-                    handleScannedCodesChange(newCodes)
-                }
-#else
+//#if compiler(>=5.9)
+//                .onChange(of: scanner.scannedCodes) { oldCodes, newCodes in
+//                    handleScannedCodesChange(newCodes)
+//                }
+//#else
                 .onChange(of: scanner.scannedCodes) { codes in
                     handleScannedCodesChange(codes)
                 }
-#endif
+//#endif
             } else {
                 Color.black
                     .edgesIgnoringSafeArea(.all)

@@ -252,14 +252,14 @@ struct QRCodeFormView: View {
             FormField(title: "Latitude", value: $latitude, placeholder: "e.g. 37.7749")
             FormField(title: "Longitude", value: $longitude, placeholder: "e.g. -122.4194")
             
-            Button("Use Current Location") {
-                // This would need location permission handling
-                // For now, just set example values
-                latitude = "37.7749"
-                longitude = "-122.4194"
-            }
-            .foregroundColor(type.color)
-            .frame(maxWidth: .infinity, alignment: .trailing)
+//            Button("Use Current Location") {
+//                // This would need location permission handling
+//                // For now, just set example values
+//                latitude = "37.7749"
+//                longitude = "-122.4194"
+//            }
+//            .foregroundColor(type.color)
+//            .frame(maxWidth: .infinity, alignment: .trailing)
         }
         .padding(.horizontal)
     }

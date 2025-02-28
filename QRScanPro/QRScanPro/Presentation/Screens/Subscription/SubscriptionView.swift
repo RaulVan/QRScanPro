@@ -5,6 +5,9 @@ struct SubscriptionView: View {
     @Environment(\.dismiss) var dismiss
     @State private var selectedPlan: SubscriptionPlan = .quarterly  // 默认选中 3 个月套餐
     @State private var showMainView = false
+    @State private var isLoading = false
+    @State private var errorMessage: String?
+    @State private var showError = false
     let showCloseButton: Bool
     
     var body: some View {
@@ -41,8 +44,23 @@ struct SubscriptionView: View {
                     termsSection
                 }
                 .padding()
+                .overlay {
+                    if isLoading {
+                        ProgressView()
+                            .scaleEffect(1.5)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .background(Color.black.opacity(0.2))
+                    }
+                }
             }
             .background(Color(.systemBackground))
+            .alert("Error", isPresented: $showError) {
+                Button("OK") {
+                    showError = false
+                }
+            } message: {
+                Text(errorMessage ?? "An unknown error occurred")
+            }
         }
     }
     
@@ -113,8 +131,9 @@ struct SubscriptionView: View {
     private var termsSection: some View {
         VStack(spacing: 8) {
             Button(action: {
-                viewModel.subscribe(to: selectedPlan)
-                dismiss()
+                Task {
+                    await subscribe()
+                }
             }) {
                 Text("Buy")
                     .fontWeight(.semibold)
@@ -126,14 +145,18 @@ struct SubscriptionView: View {
                             .fill(Color.green)
                     )
             }
+            .disabled(isLoading)
             
             Button(action: {
-                viewModel.restorePurchases()
+                Task {
+                    await restorePurchases()
+                }
             }) {
                 Text("Restore Purchases")
                     .font(.subheadline)
                     .foregroundColor(.purple)
             }
+            .disabled(isLoading)
             .padding(.top, 8)
             
             Text("By continuing, you agree to our Terms & Conditions")
@@ -143,6 +166,30 @@ struct SubscriptionView: View {
                 .padding(.top, 4)
         }
         .padding(.top)
+    }
+    
+    private func subscribe() async {
+        isLoading = true
+        do {
+            try await viewModel.subscribe(to: selectedPlan)
+            dismiss()
+        } catch {
+            errorMessage = error.localizedDescription
+            showError = true
+        }
+        isLoading = false
+    }
+    
+    private func restorePurchases() async {
+        isLoading = true
+        do {
+            try await viewModel.restorePurchases()
+            dismiss()
+        } catch {
+            errorMessage = error.localizedDescription
+            showError = true
+        }
+        isLoading = false
     }
 }
 
@@ -195,13 +242,13 @@ struct SubscriptionPlanRow: View {
 #Preview {
     SubscriptionView(showCloseButton: true)
         .environmentObject(AppViewModel())
-} 
+}
 
 #Preview {
     SubscriptionPlanRow(
         plan: .quarterly,
         isSelected: true,
-        action: {  }
+        action: { }
     )
 }
 

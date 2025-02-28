@@ -7,30 +7,145 @@ class AppViewModel: ObservableObject {
     @Published var generatedHistory: [GeneratedItem] = []
     @Published var isSubscribed = false
     @Published var showSubscription = false
+    @Published var products: [Product] = []
+    @Published var purchaseError: String?
+    
+    private var subscriptionStatusTask: Task<Void, Error>?
+    private var productsTask: Task<Void, Error>?
+    private var updates: Task<Void, Error>?
     
     init() {
         // 从 UserDefaults 加载订阅状态
         isSubscribed = UserDefaults.standard.bool(forKey: "isSubscribed")
+        
+        // 开始监听订阅状态更新
+        updates = observeTransactionUpdates()
+        // 获取产品信息
+        productsTask = requestProducts()
+        // 验证订阅状态
+        subscriptionStatusTask = checkSubscriptionStatus()
+    }
+    
+    deinit {
+        subscriptionStatusTask?.cancel()
+        productsTask?.cancel()
+        updates?.cancel()
     }
     
     // MARK: - Subscription
-    func subscribe(to plan: SubscriptionPlan) {
-        // TODO: 实现 StoreKit 订阅购买
-        // 这里是模拟订阅成功
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-            self.isSubscribed = true
-            // 保存订阅状态
-            UserDefaults.standard.set(true, forKey: "isSubscribed")
+    func subscribe(to plan: SubscriptionPlan) async throws {
+        // 查找对应的产品
+        guard let product = products.first(where: { $0.id == plan.productId }) else {
+            throw SubscriptionError.productNotFound
+        }
+        
+        do {
+            // 发起购买
+            let result = try await product.purchase()
+            
+            switch result {
+            case .success(let verification):
+                // 验证购买凭证
+                switch verification {
+                case .verified(let transaction):
+                    // 购买成功，更新订阅状态
+                    await updateSubscriptionStatus(true)
+                    await transaction.finish()
+                case .unverified:
+                    throw SubscriptionError.verificationFailed
+                }
+            case .userCancelled:
+                throw SubscriptionError.userCancelled
+            case .pending:
+                throw SubscriptionError.pending
+            @unknown default:
+                throw SubscriptionError.unknown
+            }
+        } catch {
+            await updateSubscriptionStatus(false)
+            throw error
         }
     }
     
-    func restorePurchases() {
-        // TODO: 实现恢复购买功能
-        // 这里是模拟恢复购买
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-            self.isSubscribed = true
-            UserDefaults.standard.set(true, forKey: "isSubscribed")
+    func restorePurchases() async throws {
+        // 检查所有交易
+        for await result in Transaction.currentEntitlements {
+            switch result {
+            case .verified(let transaction):
+                // 验证成功，更新订阅状态
+                await updateSubscriptionStatus(true)
+                await transaction.finish()
+            case .unverified:
+                throw SubscriptionError.verificationFailed
+            }
         }
+    }
+    
+    // MARK: - Private Methods
+    private func requestProducts() -> Task<Void, Error> {
+        Task {
+            do {
+                // 获取所有订阅计划的产品 ID
+                let productIds = Set([
+                    SubscriptionPlan.trial.productId,
+                    SubscriptionPlan.monthly.productId,
+                    SubscriptionPlan.quarterly.productId
+                ])
+                
+                // 请求产品信息
+                let products = try await Product.products(for: productIds)
+                await MainActor.run {
+                    self.products = products
+                }
+            } catch {
+                print("Failed to load products: \(error)")
+            }
+        }
+    }
+    
+    private func checkSubscriptionStatus() -> Task<Void, Error> {
+        Task {
+            for await result in Transaction.currentEntitlements {
+                switch result {
+                case .verified(let transaction):
+                    // 检查订阅是否过期
+                    if let expirationDate = transaction.expirationDate,
+                       expirationDate > Date() {
+                        await updateSubscriptionStatus(true)
+                    } else {
+                        await updateSubscriptionStatus(false)
+                    }
+                case .unverified:
+                    await updateSubscriptionStatus(false)
+                }
+            }
+        }
+    }
+    
+    private func observeTransactionUpdates() -> Task<Void, Error> {
+        Task {
+            for await verification in Transaction.updates {
+                switch verification {
+                case .verified(let transaction):
+                    // 处理交易更新
+                    if let expirationDate = transaction.expirationDate,
+                       expirationDate > Date() {
+                        await updateSubscriptionStatus(true)
+                    } else {
+                        await updateSubscriptionStatus(false)
+                    }
+                    await transaction.finish()
+                case .unverified:
+                    await updateSubscriptionStatus(false)
+                }
+            }
+        }
+    }
+    
+    @MainActor
+    private func updateSubscriptionStatus(_ isSubscribed: Bool) {
+        self.isSubscribed = isSubscribed
+        UserDefaults.standard.set(isSubscribed, forKey: "isSubscribed")
     }
     
     // MARK: - Scan Items
@@ -71,5 +186,32 @@ class AppViewModel: ObservableObject {
             return false
         }
         return true
+    }
+}
+
+// MARK: - Subscription Errors
+enum SubscriptionError: LocalizedError {
+    case productNotFound
+    case purchaseFailed
+    case verificationFailed
+    case userCancelled
+    case pending
+    case unknown
+    
+    var errorDescription: String? {
+        switch self {
+        case .productNotFound:
+            return "Product not found"
+        case .purchaseFailed:
+            return "Purchase failed"
+        case .verificationFailed:
+            return "Purchase verification failed"
+        case .userCancelled:
+            return "Purchase cancelled"
+        case .pending:
+            return "Purchase is pending"
+        case .unknown:
+            return "An unknown error occurred"
+        }
     }
 } 

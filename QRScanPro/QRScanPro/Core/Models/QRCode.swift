@@ -30,6 +30,8 @@ struct ScanRecord: Identifiable, Codable {
     }
 }
 
+
+
 enum QRCodeType: String, Codable, Identifiable, CaseIterable {
     case url
     case email
@@ -119,5 +121,10 @@ enum QRCodeType: String, Codable, Identifiable, CaseIterable {
         
         let range = NSRange(location: 0, length: cleanString.utf16.count)
         return regex.firstMatch(in: cleanString, range: range) != nil
+    }
+    
+    // 添加一个静态方法来获取所有类型
+    static var allTypes: [QRCodeType] {
+        return [.url, .email, .phone, .text, .wifi, .contact, .message, .clipboard]
     }
 }
