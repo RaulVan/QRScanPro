@@ -34,15 +34,26 @@ class AppViewModel: ObservableObject {
     
     // MARK: - Subscription
     func subscribe(to plan: SubscriptionPlan) async throws {
+        // 检查产品列表是否已加载
+        if products.isEmpty {
+            // 重新请求产品信息
+            do {
+                _ = await requestProducts() // 等待产品加载完成
+            } catch {
+                // 如果产品加载失败，抛出错误
+                throw SubscriptionError.productLoadingFailed
+            }
+        }
+
         // 查找对应的产品
         guard let product = products.first(where: { $0.id == plan.productId }) else {
             throw SubscriptionError.productNotFound
         }
-        
+
         do {
             // 发起购买
             let result = try await product.purchase()
-            
+
             switch result {
             case .success(let verification):
                 // 验证购买凭证
@@ -197,6 +208,7 @@ enum SubscriptionError: LocalizedError {
     case userCancelled
     case pending
     case unknown
+    case productLoadingFailed
     
     var errorDescription: String? {
         switch self {
@@ -212,6 +224,8 @@ enum SubscriptionError: LocalizedError {
             return "Purchase is pending"
         case .unknown:
             return "An unknown error occurred"
+        case .productLoadingFailed:
+            return "Failed to load product list"
         }
     }
 } 
