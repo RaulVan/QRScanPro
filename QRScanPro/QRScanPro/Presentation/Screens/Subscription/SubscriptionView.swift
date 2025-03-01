@@ -3,7 +3,7 @@ import SwiftUI
 struct SubscriptionView: View {
     @EnvironmentObject var viewModel: AppViewModel
     @Environment(\.dismiss) var dismiss
-    @State private var selectedPlan: SubscriptionPlan = .quarterly  // 默认选中 3 个月套餐
+    @State private var selectedPlan: SubscriptionPlan = .monthly  // 默认选中 3 个月套餐
     @State private var showMainView = false
     @State private var isLoading = false
     @State private var errorMessage: String?
@@ -22,6 +22,7 @@ struct SubscriptionView: View {
                             Spacer()
                             Button(action: {
                                 showMainView = true
+                                dismiss()
                             }) {
                                 Image(systemName: "xmark.circle.fill")
                                     .font(.title2)
@@ -94,16 +95,25 @@ struct SubscriptionView: View {
     
     private var plansSection: some View {
         VStack(spacing: 12) {
-            // 3天试用
+            //            // 3天试用
+            //            SubscriptionPlanRow(
+            //                plan: .trial,
+            //                isSelected: selectedPlan == .trial,
+            //                action: { selectedPlan = .trial }
+            //            ).overlay(
+            //                RoundedRectangle(cornerRadius: 12)
+            //                    .stroke(selectedPlan == .trial ? Color.purple : Color.clear, lineWidth: 2)
+            //            )
+            // 1个月套餐
             SubscriptionPlanRow(
-                plan: .trial,
-                isSelected: selectedPlan == .trial,
-                action: { selectedPlan = .trial }
-            ).overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(selectedPlan == .trial ? Color.purple : Color.clear, lineWidth: 2)
+                plan: .monthly,
+                isSelected: selectedPlan == .monthly,
+                action: { selectedPlan = .monthly }
             )
-            
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(selectedPlan == .monthly ? Color.purple : Color.clear, lineWidth: 2)
+            )
             // 3个月套餐（推荐）
             SubscriptionPlanRow(
                 plan: .quarterly,
@@ -115,16 +125,17 @@ struct SubscriptionView: View {
                     .stroke(selectedPlan == .quarterly ? Color.purple : Color.clear, lineWidth: 2)
             )
             
-            // 1个月套餐
+            // 12个月套餐
             SubscriptionPlanRow(
-                plan: .monthly,
-                isSelected: selectedPlan == .monthly,
-                action: { selectedPlan = .monthly }
+                plan: .yearly,
+                isSelected: selectedPlan == .yearly,
+                action: { selectedPlan = .yearly }
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
-                    .stroke(selectedPlan == .monthly ? Color.purple : Color.clear, lineWidth: 2)
+                    .stroke(selectedPlan == .yearly ? Color.purple : Color.clear, lineWidth: 2)
             )
+            
         }
     }
     

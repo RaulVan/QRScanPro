@@ -4,6 +4,7 @@ enum SubscriptionPlan: Equatable {
     case trial
     case monthly
     case quarterly
+    case yearly
     
     var title: String {
         switch self {
@@ -13,17 +14,21 @@ enum SubscriptionPlan: Equatable {
             return "1 Month"
         case .quarterly:
             return "3 Months"
+        case .yearly:
+            return "12 Months"
         }
     }
     
     var price: Double {
         switch self {
         case .trial:
-            return 9.0
+            return 0.0
         case .monthly:
-            return 19.0
+            return 0.99
         case .quarterly:
-            return 29.0
+            return 3.99
+        case .yearly:
+            return 10.99
         }
     }
     
@@ -39,6 +44,8 @@ enum SubscriptionPlan: Equatable {
             return 30 // days
         case .quarterly:
             return 90 // days
+        case .yearly:
+            return 365 // days
         }
     }
     
@@ -47,9 +54,11 @@ enum SubscriptionPlan: Equatable {
         case .trial:
             return "com.qrscanpro.subscription.trial"
         case .monthly:
-            return "com.qrscanpro.subscription.monthly"
+            return "com.qrscanpro.subscription.monthly1"
         case .quarterly:
             return "com.qrscanpro.subscription.quarterly"
+        case .yearly:
+            return "com.qrscanpro.subscription.yearly"
         }
     }
     
@@ -64,6 +73,11 @@ enum SubscriptionPlan: Equatable {
     }
     
     static var defaultPlan: SubscriptionPlan {
-        return .quarterly // 设置默认选中的计划
+        return .monthly // 设置默认选中的计划
     }
-} 
+    
+    static var productIds: [String] {
+        //SubscriptionPlan.trial.productId,
+        return [SubscriptionPlan.monthly.productId, SubscriptionPlan.quarterly.productId, SubscriptionPlan.yearly.productId]
+    }
+}

@@ -20,12 +20,7 @@ struct QRScanProApp: App {
     var body: some Scene {
         WindowGroup {
             ZStack {
-                // 主视图
-                MainTabView()
-                    .environmentObject(viewModel)
-                    .environmentObject(historyManager)
-                    .environmentObject(generateViewModel)
-                
+               
                 // 启动屏幕
                 if showLaunchScreen {
                     LaunchScreenView()

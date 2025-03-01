@@ -8,7 +8,7 @@ class AppViewModel: ObservableObject {
     @Published var isSubscribed = false
     @Published var showSubscription = false
     @Published var products: [Product] = []
-    @Published var purchaseError: String?
+//    @Published var purchaseError: String?
     
     private var subscriptionStatusTask: Task<Void, Error>?
     private var productsTask: Task<Void, Error>?
@@ -44,7 +44,11 @@ class AppViewModel: ObservableObject {
                 throw SubscriptionError.productLoadingFailed
             }
         }
-
+//        else {
+//            products.forEach { p in
+//                print(p.id)
+//            }
+//        }
         // 查找对应的产品
         guard let product = products.first(where: { $0.id == plan.productId }) else {
             throw SubscriptionError.productNotFound
@@ -80,15 +84,30 @@ class AppViewModel: ObservableObject {
     
     func restorePurchases() async throws {
         // 检查所有交易
-        for await result in Transaction.currentEntitlements {
-            switch result {
-            case .verified(let transaction):
-                // 验证成功，更新订阅状态
-                await updateSubscriptionStatus(true)
-                await transaction.finish()
-            case .unverified:
-                throw SubscriptionError.verificationFailed
+        do {
+            var restored = false // 添加一个标志来跟踪是否恢复了购买
+            for await result in Transaction.currentEntitlements {
+                restored = true // 如果循环执行，则表示找到了交易
+                switch result {
+                case .verified(let transaction):
+                    // 验证成功，更新订阅状态
+                    print("Restore Purchase: Transaction verified")
+                    await updateSubscriptionStatus(true)
+                    await transaction.finish()
+                case .unverified:
+                    print("Restore Purchase: Transaction not verified")
+                    throw SubscriptionError.verificationFailed
+                }
             }
+            if !restored { // 检查是否找到了任何交易
+                print("Restore Purchase: No purchases to restore")
+                throw SubscriptionError.restoreNoPurchases
+            } else {
+                
+            }
+        } catch {
+            print("Restore Purchase Failed: \(error)")
+            throw SubscriptionError.restoreError
         }
     }
     
@@ -97,11 +116,7 @@ class AppViewModel: ObservableObject {
         Task {
             do {
                 // 获取所有订阅计划的产品 ID
-                let productIds = Set([
-                    SubscriptionPlan.trial.productId,
-                    SubscriptionPlan.monthly.productId,
-                    SubscriptionPlan.quarterly.productId
-                ])
+                let productIds = Set(SubscriptionPlan.productIds)
                 
                 // 请求产品信息
                 let products = try await Product.products(for: productIds)
@@ -209,6 +224,10 @@ enum SubscriptionError: LocalizedError {
     case pending
     case unknown
     case productLoadingFailed
+    case restoreNoPurchases
+    case restoreError
+    case restoreCompleted
+    
     
     var errorDescription: String? {
         switch self {
@@ -226,6 +245,12 @@ enum SubscriptionError: LocalizedError {
             return "An unknown error occurred"
         case .productLoadingFailed:
             return "Failed to load product list"
+        case .restoreNoPurchases:
+            return "Restore Purchase: No purchases to restore"
+        case .restoreError:
+            return "Restore Purchase Failed"
+        case .restoreCompleted:
+            return "Restore Purchase: Completed"
         }
     }
 } 
