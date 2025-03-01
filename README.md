@@ -89,4 +89,99 @@ open QRScanPro.xcodeproj
 - 设计师：[Designer Name]
 
 ## 版权信息
+© 2024 QR Scan Pro. All rights reserved.
+
+---
+
+# QR Scan Pro (English)
+
+A powerful iOS QR code scanning and generation application.
+
+## Features
+
+### Scanning Features
+- Multiple QR codes simultaneous recognition
+- Smart focus and exposure control
+- Flashlight control
+- Tap-to-focus with animation
+- Photo library QR code recognition
+
+### Generation Features
+- Support for multiple QR code types:
+  - Website URLs
+  - Email addresses
+  - Contact information
+  - Phone numbers
+  - WiFi configurations
+  - Text content
+
+### History Management
+- Scan history
+- Generation history
+- Category management
+- Quick copy and share
+
+## Technical Architecture
+
+### Project Structure
+```
+QRScanPro/
+├── App/          # Application entry
+├── Core/         # Core functionality modules
+├── Domain/       # Business domain models
+├── Data/         # Data persistence
+└── Presentation/ # User interface
+```
+
+### Technical Features
+- SwiftUI + Combine reactive programming
+- MVVM architecture pattern
+- Core Data persistence
+- AVFoundation camera control
+- Vision framework image recognition
+- Core Image processing
+
+## System Requirements
+- iOS 15.0 or later
+- Xcode 14.0 or later
+- Swift 5.5 or later
+
+## Installation Guide
+
+1. Clone the project
+```bash
+git clone [repository-url]
+```
+
+2. Open the project
+```bash
+cd QRScanPro
+open QRScanPro.xcodeproj
+```
+
+3. Run the project
+- Select target device or simulator
+- Click run button or press `Cmd + R`
+
+## Usage Instructions
+
+### Scanning QR Codes
+1. Open app, default to scanning interface
+2. Align QR code with scanning frame
+3. Automatic recognition and result display
+4. Tap anywhere on screen to focus
+5. Tap top-right button to toggle flashlight
+
+### Generating QR Codes
+1. Switch to generation tab
+2. Select QR code type
+3. Enter relevant information
+4. Click generate button
+5. Long press generated QR code to save or share
+
+## Development Team
+- Developer: [Your Name]
+- Designer: [Designer Name]
+
+## Copyright
 © 2024 QR Scan Pro. All rights reserved. 
